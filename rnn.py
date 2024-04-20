@@ -237,7 +237,8 @@ if choice == "Buyback":
     
     # garis grafik perkiraan harga emas
     predicted_dates = pd.date_range(start=df.index[-1], periods=len(y_pred) + 1)[1:] # men-generate tanggal untuk prediksi
-    fig.add_trace(go.Scatter(x=predicted_dates, y=y_pred.flatten(), mode='lines', name='Prediksi Harga Emas'))
+    actual_predicted_prices = sc.inverse_transform(predicted_dates)
+    fig.add_trace(go.Scatter(x=actual_predicted_prices, y=y_pred.flatten(), mode='lines', name='Prediksi Harga Emas'))
     
     # Prediksi harga besok
     fig.add_trace(go.Scatter(x=[df.index[-1], df.index[-1] + timedelta(days=1)], y=[df['Pricebuy'].iloc[-1], predicted_tomorrow_price[0][0]], mode='markers+lines', name="Prediksi Harga Esok"))
