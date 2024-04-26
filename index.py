@@ -41,7 +41,7 @@ with st.container():
     with col12:
         login = st.button('Login')
         if login:
-            subprocess.run(["streamlit", "run", "main.py"])
+            subprocess.run(["streamlit", "run", "rnn.py"])
 
 
 

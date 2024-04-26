@@ -36,6 +36,9 @@ with open('style_css.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 if choice == "Buyback":
+    # jarak_hari = st.text_input('Jarak hari yang akan diprediksi:', '')
+    # st.write()
+    
     # Fungsi untuk melakukan scraping data
     def scrape_data(start_date, end_date):
         bulan = {
@@ -119,7 +122,7 @@ if choice == "Buyback":
     pd.set_option('display.max_columns', None)
 
     data_set.head(5)
-
+    
     # Learning / Preprocessing data
     from sklearn.preprocessing import MinMaxScaler
     sc = MinMaxScaler(feature_range=(0,1))
@@ -212,7 +215,7 @@ if choice == "Buyback":
     # plt.plot(y_pred, color="blue", label="Prediction")
     # plt.legend()
     # plt.show()
-    
+
     # Get the last backcandles days' price
     last_backandles_prices = data_set_scaled[-backcandles:]
 
@@ -227,21 +230,21 @@ if choice == "Buyback":
 
     print("Tomorrow's price: ", predicted_tomorrow_price[0][0])
 
-    # grafik
+    # grafik sebelum input
     fig = go.Figure()
     # fig.add_trace(go.Scatter(x=df.index, y=df['Pricebuy'], mode='lines', name='Harga Emas Aktual'))
-    
+
     # garis grafik harga emas aktual
     fig.add_trace(go.Scatter(x=df.index, y=df['Pricebuy'], mode='lines', name='Harga Emas Aktual'))
     # fig.add_trace(go.Scatter(x=df.index, y=wmavg, mode='lines', name='Prediksi Harga Emas'))
-    
+
     # garis grafik perkiraan harga emas
-    predicted_dates = pd.date_range(start=df.index[-1], periods=len(y_pred) + 1)[1:] # men-generate tanggal untuk prediksi
-    actual_predicted_prices = sc.inverse_transform(predicted_dates)
-    fig.add_trace(go.Scatter(x=actual_predicted_prices, y=y_pred.flatten(), mode='lines', name='Prediksi Harga Emas'))
-    
+    # predicted_dates = pd.date_range(start=df.index[-1], periods=len(y_pred) + 1)[1:] # men-generate tanggal untuk prediksi
+    # actual_predicted_prices = sc.inverse_transform(predicted_dates)
+    # fig.add_trace(go.Scatter(x=predicted_dates, y=y_pred.flatten(), mode='lines', name='Prediksi Harga Emas'))
+
     # Prediksi harga besok
-    fig.add_trace(go.Scatter(x=[df.index[-1], df.index[-1] + timedelta(days=1)], y=[df['Pricebuy'].iloc[-1], predicted_tomorrow_price[0][0]], mode='markers+lines', name="Prediksi Harga Esok"))
+    # fig.add_trace(go.Scatter(x=[df.index[-1], df.index[-1] + timedelta(days=int(days_input))], y=[df['Pricebuy'].iloc[-1], predicted_tomorrow_price[0][0]], mode='markers+lines', name="Prediksi Harga Esok"))
 
     # layout grafik
     fig.update_layout(
@@ -264,3 +267,57 @@ if choice == "Buyback":
     )
 
     st.plotly_chart(fig)
+    
+    #####################################################################################
+    
+    days_input = st.text_input("Masukkan jumlah hari kedepan: ")
+
+    if st.button("Show prediction"):
+        # if days_input == "":
+        #     st.warning("Please fill the input field first!")
+        # else:
+        # num_days = int(days_input)
+        # grafik setelah input
+        fig = go.Figure()
+        # fig.add_trace(go.Scatter(x=df.index, y=df['Pricebuy'], mode='lines', name='Harga Emas Aktual'))
+
+        # garis grafik harga emas aktual
+        fig.add_trace(go.Scatter(x=df.index, y=df['Pricebuy'], mode='lines', name='Harga Emas Aktual'))
+        # fig.add_trace(go.Scatter(x=df.index, y=wmavg, mode='lines', name='Prediksi Harga Emas'))
+
+        # garis grafik perkiraan harga emas
+        predicted_dates = pd.date_range(start=df.index[-1], periods=len(y_pred) + 1)[1:] # men-generate tanggal untuk prediksi
+        # actual_predicted_prices = sc.inverse_transform(predicted_dates)
+        fig.add_trace(go.Scatter(x=predicted_dates, y=y_pred.flatten(), mode='lines', name='Prediksi Harga Emas'))
+
+        # Prediksi harga besok
+        # fig.add_trace(go.Scatter(x=[df.index[-1], df.index[-1] + timedelta(days=15)], y=[df['Pricebuy'].iloc[-1], predicted_tomorrow_price[0][0]], mode='markers+lines', name="Prediksi Harga Esok"))
+        fig.add_trace(go.Scatter(x=[df.index[-1], df.index[-1] + timedelta(days=int(days_input))], y=[df['Pricebuy'].iloc[-1], predicted_tomorrow_price[0][0]], mode='markers+lines', name="Prediksi Harga Esok"))
+
+        # layout grafik
+        fig.update_layout(
+            xaxis_title='Tanggal',
+            yaxis_title='Harga Emas (Rupiah)',
+                xaxis=dict(
+                rangeselector=dict(
+                    buttons=list([
+                        dict(count=7, label='1 w', step='day', stepmode='backward'),
+                        dict(count=3, label='3 m', step='month', stepmode='backward'),
+                        dict(count=6, label='6 m', step='month', stepmode='backward'),
+                        dict(step='all')
+                    ])
+                ),
+                rangeslider=dict(visible=True),
+                type='date'
+            ),
+            width=750,  # Lebar grafik (dalam piksel)
+            height=400
+        )
+
+        st.plotly_chart(fig)
+
+        # col1, col2 = st.columns(2)
+        # with col1:
+
+
+        # st.button('Re-train', on_click=scrape_dan_simpan)
