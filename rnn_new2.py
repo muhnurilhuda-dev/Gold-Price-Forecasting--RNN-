@@ -10,12 +10,13 @@ from tensorflow.keras.layers import Dense, LSTM
 from keras import optimizers
 from sklearn.preprocessing import MinMaxScaler
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import time
 import requests
 from bs4 import BeautifulSoup
 from csv import writer
 import os
+import locale
 
 st.set_page_config(page_title="Gold Price Forecasting", page_icon=":bar_chart:")
 
@@ -42,13 +43,22 @@ if choice == "Home":
 elif choice == "Data":
     st.title("Gold Price Data")
     df = pd.read_csv('data/harga_emas_new2.csv')
+    df['Harga 1gr'] = df['Price1']
+    df['Harga 2gr'] = df['Price2']
+    df['Harga 3gr'] = df['Price3']
+    df['Harga 5gr'] = df['Price5']
+    df['Harga 10gr'] = df['Price10']
+    df['Harga 25gr'] = df['Price25']
+    df['Harga 50gr'] = df['Price50']
+    df['Harga 100gr'] = df['Price100']
+    df.drop(['Price1', 'Price2', 'Price3', 'Price5', 'Price10', 'Price25', 'Price50', 'Price100'], axis=1, inplace=True)
     st.write(df)
 
 # Scrape Data page
 elif choice == "Scrape Data":
     st.title("Scrape Gold Price Data")
     with st.status("Scraping data...", expanded=True) as status:
-        def scrape_data(start_date, end_date):
+        def scrape_data(start_date, end_date, existing_dates):
             bulan = {
                 1: "Januari",
                 2: "Februari",
@@ -71,6 +81,12 @@ elif choice == "Scrape Data":
             st.write("Getting the data form URL...")       
 
             for date in pd.date_range(start_date, end_date):
+                
+                # Checking the price data is already existed or not
+                date_str = date.strftime("%Y-%m-%d")
+                if date_str in existing_dates:
+                    continue
+                
                 month_name_id = bulan[date.month]
                 url_day = f"https://harga-emas.org/history-harga/{date.year}/{month_name_id}/{date.day}/"                
                 
@@ -117,11 +133,15 @@ elif choice == "Scrape Data":
                 csv_writer = writer(file)
                 csv_writer.writerows(data_list)
 
-        start_date = st.date_input("Start Date", datetime.now().date() - timedelta(days=30))
-        end_date = st.date_input("End Date", datetime.now().date())
+        start_date = st.date_input("Start Date", datetime.now().date() - timedelta(days=30), min_value=date(2014,1,1), max_value=datetime.now(), format="DD/MM/YYYY")
+        end_date = st.date_input("End Date", datetime.now().date(), min_value=date(2014,1,1), max_value=datetime.now(), format="DD/MM/YYYY")
+        
+        # Load existing price data
+        existing_data = pd.read_csv('data/harga_emas_new2.csv')
+        existing_dates = set(existing_data['Tanggal'])
 
         if st.button("Scrape Data"):
-            data_list = scrape_data(start_date, end_date)
+            data_list = scrape_data(start_date, end_date, existing_dates)
             # save_to_csv(data_list, 'data/buy_1gr.csv')
             save_to_csv(data_list, 'data/harga_emas_new2.csv')
             status.update(label="Getting data complete!", state="complete", expanded=True)
@@ -179,7 +199,7 @@ elif choice == "Forecast":
         model.add(Dense(1))
 
         # Hyperparameters to tune
-        lstm_units = 150  # Start with 150, tune this value
+        # lstm_units = 150  # Start with 150, tune this value
         learning_rate = 0.001  # Start with 0.001, tune this value
         batch_size = 30  # Start with 30, tune this value
         epochs = 30  # Start with 20, tune this value
@@ -356,3 +376,91 @@ elif choice == "Forecast":
     # Show predicted prices
     # predicted_df = pd.DataFrame(predicted_prices, index=future_dates, columns=['Predicted Price'])
     # st.write(predicted_df)
+    
+    # SELLING GOLD RECOMMENDATION (Rekomendasi Jual Emas)
+    st.header("Rekomendasi Jual Emas")
+    purchase_date = st.date_input("Pilih tanggal saat Anda membeli emas", min_value=date(2014,1,1), max_value=datetime.now(), format="DD/MM/YYYY")
+    # purchase_price = st.number_input("Masukkan satuan gram emas yang ingin anda jual")
+    purchase_date_str = purchase_date.strftime("%Y-%m-%d")
+    
+    locale.setlocale(locale.LC_ALL, '')
+    
+    if purchase_date_str in df.index:
+        purchase_price = float(df.loc[purchase_date_str]['Harga'])
+        currency_price = locale.currency(purchase_price, grouping=True)
+        st.write(f"Harga aktual pada tanggal {purchase_date_str}: {currency_price}/gram")
+    else:
+        st.error("Data harga pada tanggal tersebut kosong.")
+    
+    
+    # def tombol_rekomendasi():
+    #     st.button("Tampilkan Rekomendasi", on_click=tampilkan_rekomendasi)
+    
+    # if st.button("Tampilkan Rekomendasi"):
+    with st.container():
+        # rekomendasi = st.button("Tampilkan Rekomendasi")
+        def tampilkan_rekomendasi():
+        # if rekomendasi:
+            with st.spinner("Loading..."):
+            
+            # if purchase_price in df.index:
+                # purchase_price = float(purchase_price)
+                tomorrow_price = float(predicted_prices)
+                tomorrow_currency_price = locale.currency(tomorrow_price, grouping=True)
+                if tomorrow_price > purchase_price:
+                    profit_currency = locale.currency((tomorrow_price - purchase_price), grouping=True)
+                    time.sleep(1)
+                    st.success(f"Direkomendasikan untuk menjual emas. Prediksi harga besok: {tomorrow_currency_price}/gram.\nAnda akan untung sebesar {profit_currency}")
+                else:
+                    time.sleep(1)
+                    st.warning(f"Tidak direkomendasikan untuk menjual emas. Prediksi harga besok: {tomorrow_currency_price}/gram")
+            # else:
+            #     st.error("Data harga pada tanggal tersebut kosong. Tolong pilih tanggal lain yang tidak kosong.")
+
+        if st.button("Tampilkan Rekomendasi"):
+            tampilkan_rekomendasi()
+        # tombol_rekomendasi()
+        
+    # REKOMENDASI BELI
+    st.header("Rekomendasi Beli Emas")
+    
+    df = pd.read_csv('data/harga_emas_new2.csv')
+    df['Tanggal'] = pd.to_datetime(df['Tanggal'])
+    df.set_index('Tanggal', inplace=True)
+
+    df['Harga'] = df['Price1'].astype(str).str.replace('.', '').astype(float)
+    df.drop(['Price1', 'Price2', 'Price3', 'Price5', 'Price10', 'Price25', 'Price50', 'Price100'], axis=1, inplace=True)
+    
+    df['Month'] = df.index.month
+    df['Year'] = df.index.year
+    
+    monthly_avg_prices = df.groupby(['Year', 'Month'])['Harga'].mean().reset_index()
+    monthly_avg_prices_pivot = monthly_avg_prices.pivot(index='Year', columns='Month', values='Harga')
+    
+    average_monthly_prices = monthly_avg_prices_pivot.mean(axis=0)
+    recommended_month = average_monthly_prices.idxmin()
+    
+    bulan = {
+        1: "Januari",
+        2: "Februari",
+        3: "Maret",
+        4: "April",
+        5: "Mei",
+        6: "Juni",
+        7: "Juli",
+        8: "Agustus",
+        9: "September",
+        10: "Oktober",
+        11: "November",
+        12: "Desember"
+    }
+    
+    month_name_id = bulan[recommended_month]
+    
+    st.write(f"Berdasarkan data historis, harga emas cenderung paling rendah pada bulan: {month_name_id}")
+    
+    st.bar_chart(average_monthly_prices)
+    
+    st.write("Rekomendasi beli:")
+    st.success(f"Bulan terbaik untuk membeli emas adalah bulan {month_name_id} berdasarkan tren harga historis.")
+    
