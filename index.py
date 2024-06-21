@@ -35,11 +35,11 @@ with st.container():
     gambar = 'jpg/gk.jpg'
     st.image(gambar, use_column_width=True)
     with col11:
-        about = st.button('about')
+        about = st.button('About')
         if about:
             subprocess.run(["streamlit", "run", "about.py"])
     with col12:
-        login = st.button('Login')
+        login = st.button('Start')
         if login:
             subprocess.run(["streamlit", "run", "rnn_new2.py"])
 

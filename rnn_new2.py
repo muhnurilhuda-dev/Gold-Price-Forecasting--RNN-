@@ -1,6 +1,9 @@
+from calendar import month_name
 from random import shuffle
 from turtle import width
+from click import group
 from sklearn.metrics import mean_absolute_percentage_error
+from sqlalchemy import values
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -187,7 +190,7 @@ elif choice == "Forecast":
     trainX = np.reshape(trainX, (trainX.shape[0], trainX.shape[1], 1))
     testX = np.reshape(testX, (testX.shape[0], testX.shape[1], 1))
 
-    model_path = 'saved_model/gold_price_lstm.h5'
+    model_path = 'saved_model/model.h5'
     
     retrain = st.button("Retrain Model")
     if retrain or not os.path.exists(model_path):
@@ -198,12 +201,11 @@ elif choice == "Forecast":
         model.add(Dense(25))
         model.add(Dense(1))
 
-        # Hyperparameters to tune
-        # lstm_units = 150  # Start with 150, tune this value
-        learning_rate = 0.001  # Start with 0.001, tune this value
-        batch_size = 30  # Start with 30, tune this value
-        epochs = 30  # Start with 20, tune this value
-        dropout_rate = 0.2  # Start with 0.2, tune this value
+        # Konfigurasi Hyperparameter
+        learning_rate = 0.001
+        batch_size = 20 
+        epochs = 30
+        dropout_rate = 0.2 
 
         adam = optimizers.Adam(learning_rate=learning_rate)
         model.compile(optimizer=adam, loss='mean_squared_error')
@@ -211,42 +213,10 @@ elif choice == "Forecast":
 
         # Save the model
         model.save(model_path)
-        st.success("Model trained and saved")
+        st.success("Model trained and saved successfully")
     else:
         model = load_model(model_path)
-        st.success("Loaded model from disk")
-    
-    # if os.path.exists(model_path):
-    #     model = load_model(model_path)
-    #     st.write("Model loaded")
-    # else:
-        
-    #     # LSTM model
-    #     model = Sequential()
-    #     model.add(LSTM(50, return_sequences=True, input_shape=(look_back, 1)))
-    #     model.add(LSTM(50, return_sequences=False))
-    #     model.add(Dense(25))
-    #     model.add(Dense(1))
-    
-    #     # Hyperparameters to tune
-    #     backcandles = 30  # Assuming 30 time steps
-    #     lstm_units = 150  # Start with 150, tune this value
-    #     learning_rate = 0.001  # Start with 0.001, tune this value
-    #     batch_size = 30  # Start with 15, tune this value
-    #     epochs = 20  # Start with 30, tune this value
-    #     dropout_rate = 0.2  # Start with 0.2, tune this value
-    
-    #     adam = optimizers.Adam(learning_rate=learning_rate)
-    #     model.compile(optimizer=adam, loss='mean_squared_error')
-        
-        
-
-    #     # model.compile(optimizer='adam', loss='mean_squared_error')
-    #     model.fit(x=trainX, y=trainY, batch_size=batch_size, epochs=epochs, shuffle=True, validation_split=0.1)  # Increased epochs for better training
-    
-    #     # Save the trained model
-    #     model.save(model_path)
-    #     st.write("Model trained and saved")
+        st.success("Model is loaded successfully")
 
     # Predictions
     train_predict = model.predict(trainX)
@@ -259,32 +229,22 @@ elif choice == "Forecast":
     # testY = scaler.inverse_transform([testY])
     testY = scaler.inverse_transform(testY.reshape(-1, 1))
     
-    # Calculate accuracy metrics
-    from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+    # # Menghitung tingkat error
+    # from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
     
-    # train_mse = mean_squared_error(trainY[0], train_predict[:, 0])
-    # train_mae = mean_absolute_error(trainY[0], train_predict[:, 0])
-    # train_mape = mean_absolute_percentage_error(trainY[0], train_predict[:, 0])
-    # test_mse = mean_squared_error(testY[0], test_predict[:, 0])
-    # test_mae = mean_absolute_error(testY[0], test_predict[:, 0])
+    # train_mse = mean_squared_error(trainY, train_predict)
+    # train_mape = mean_absolute_percentage_error(trainY, train_predict)
+    # test_mse = mean_squared_error(testY, test_predict)
+    # test_mape = mean_absolute_percentage_error(testY, test_predict)
     
-    train_mse = mean_squared_error(trainY, train_predict)
-    train_mae = mean_absolute_error(trainY, train_predict)
-    train_mape = mean_absolute_percentage_error(trainY, train_predict)
-    test_mse = mean_squared_error(testY, test_predict)
-    test_mae = mean_absolute_error(testY, test_predict)
-    test_mape = mean_absolute_percentage_error(testY, test_predict)
-    
-    # def mean_absolute_percentage_error(testY, test_predict):
-    #     return np.mean(np.abs((testY, test_predict) / test_predict)) * 100
+    # # def mean_absolute_percentage_error(testY, test_predict):
+    # #     return np.mean(np.abs((testY, test_predict) / test_predict)) * 100
     
     
-    st.write(f"Train MSE: {train_mse:.4f}")
-    st.write(f"Train MAE: {train_mae:.4f}")
-    st.write(f"Train MAPE: {train_mape * 100}%")
-    st.write(f"Test MSE: {test_mse:.4f}")
-    st.write(f"Test MAE: {test_mae:.4f}")
-    st.write(f"Test MAPE: {test_mape * 100}%")
+    # st.write(f"Train MSE: {train_mse:.4f}")
+    # st.write(f"Train MAPE: {train_mape * 100}%")
+    # st.write(f"Test MSE: {test_mse:.4f}")
+    # st.write(f"Test MAPE: {test_mape * 100}%")
 
     # Plotting
     train_predict_plot = np.empty_like(data)
@@ -317,35 +277,12 @@ elif choice == "Forecast":
         width=750,
         height=400
     )
-    st.plotly_chart(fig)
+    # st.plotly_chart(fig)
 
-    # User input for number of days to predict
+    # Jumlah hari kedepan yang akan diprediksi
     num_days = st.number_input("Number of days to predict", min_value=1, max_value=30, value=1)
-
-    # if st.button("Predict"):
     
-    # predicted_tomorrow_prices = []
-    
-    # for _ in range(num_days):
-    #     # Get the last backcandles days' price
-    #     last_backcandles_prices = scaled_data[-look_back:]
-    
-    #     # Reshape the data to match the modul input shape
-    #     last_backcandles_prices = last_backcandles_prices.reshape((1, look_back, 1))
-    
-    #     # Predict tomorrow's price
-    #     predicted_tomorrow_price = model.predict(last_backcandles_prices)
-    #     predicted_tomorrow_prices.append(predicted_tomorrow_price[0][0])
-    
-    #     # Inverse transform the predicted price to get the actual price
-    #     predicted_tomorrow_price = scaler.inverse_transform(predicted_tomorrow_price)
-        
-    
-    # fig.add_trace(go.Scatter(x=[df.index[-1], df.index[-1] + timedelta(days=int(num_days))], y=[df['Harga'].iloc[-1], predicted_tomorrow_price[:, 0]], mode='markers+lines', name="Prediksi Harga Esok"))
-    
-    
-    
-    # START PREDICTION
+    # PREDICTION
     last_prices = scaled_data[-look_back:]
     predicted_prices = []
 
@@ -358,24 +295,13 @@ elif choice == "Forecast":
     predicted_prices = np.array(predicted_prices).reshape(-1, 1)
     predicted_prices = scaler.inverse_transform(predicted_prices)
 
-    # # Create future dates
+    # Membuat tanggal kedepan
     last_date = df.index[-1]
     future_dates = [last_date + timedelta(days=i) for i in range(1, num_days + 1)]
 
-    # Plot future predictions
+    # Plotting prediksi
     fig.add_trace(go.Scatter(x=future_dates, y=predicted_prices[:, 0], mode='lines+markers', name='Future Predict'))    
     st.plotly_chart(fig)
-    
-    
-    # # CHECKING THE ACCURACY
-    # from sklearn.metrics import mean_squared_error, median_absolute_error, r2_score
-    # # MSE
-    # mse = mean_squared_error()
-    
-
-    # Show predicted prices
-    # predicted_df = pd.DataFrame(predicted_prices, index=future_dates, columns=['Predicted Price'])
-    # st.write(predicted_df)
     
     # SELLING GOLD RECOMMENDATION (Rekomendasi Jual Emas)
     st.header("Rekomendasi Jual Emas")
@@ -410,36 +336,51 @@ elif choice == "Forecast":
                 if tomorrow_price > purchase_price:
                     profit_currency = locale.currency((tomorrow_price - purchase_price), grouping=True)
                     time.sleep(1)
-                    st.success(f"Direkomendasikan untuk menjual emas. Prediksi harga besok: {tomorrow_currency_price}/gram.\nAnda akan untung sebesar {profit_currency}")
+                    st.success(f":blue[Direkomendasikan] untuk menjual emas. Prediksi harga besok: :blue[{tomorrow_currency_price}/gram].\nAnda akan untung sebesar :blue[{profit_currency}]")
                 else:
                     time.sleep(1)
-                    st.warning(f"Tidak direkomendasikan untuk menjual emas. Prediksi harga besok: {tomorrow_currency_price}/gram")
+                    st.warning(f":red[Tidak direkomendasikan] untuk menjual emas. Prediksi harga besok: :red[{tomorrow_currency_price}/gram]")
             # else:
             #     st.error("Data harga pada tanggal tersebut kosong. Tolong pilih tanggal lain yang tidak kosong.")
 
         if st.button("Tampilkan Rekomendasi"):
             tampilkan_rekomendasi()
         # tombol_rekomendasi()
-        
+
     # REKOMENDASI BELI
     st.header("Rekomendasi Beli Emas")
-    
+
+    # Load data
     df = pd.read_csv('data/harga_emas_new2.csv')
+
+    # Convert 'Tanggal' to datetime and set as index
     df['Tanggal'] = pd.to_datetime(df['Tanggal'])
     df.set_index('Tanggal', inplace=True)
 
+    # Convert 'Price1' to float after cleaning
     df['Harga'] = df['Price1'].astype(str).str.replace('.', '').astype(float)
+
+    # Drop unnecessary columns
     df.drop(['Price1', 'Price2', 'Price3', 'Price5', 'Price10', 'Price25', 'Price50', 'Price100'], axis=1, inplace=True)
-    
+
+    # Filter data untuk tahun 2021 - 2024
+    df = df[(df.index.year >= pd.Timestamp.now().year - 3) & (df.index.year <= pd.Timestamp.now().year - 1)]
+
+    # Extract month and year
     df['Month'] = df.index.month
     df['Year'] = df.index.year
-    
+
+    # Calculate average price for each month of each year
     monthly_avg_prices = df.groupby(['Year', 'Month'])['Harga'].mean().reset_index()
+
+    # Identify the month with the lowest average price for each year
+    recommended_months_per_year = monthly_avg_prices.loc[monthly_avg_prices.groupby('Year')['Harga'].idxmin()]
+    recommended_month = monthly_avg_prices.loc[monthly_avg_prices.groupby('Month')['Harga'].idxmin()]
+    
+    # Data pivot untuk tabel
     monthly_avg_prices_pivot = monthly_avg_prices.pivot(index='Year', columns='Month', values='Harga')
-    
-    average_monthly_prices = monthly_avg_prices_pivot.mean(axis=0)
-    recommended_month = average_monthly_prices.idxmin()
-    
+
+    # Mapping month numbers to names
     bulan = {
         1: "Januari",
         2: "Februari",
@@ -455,12 +396,63 @@ elif choice == "Forecast":
         12: "Desember"
     }
     
-    month_name_id = bulan[recommended_month]
+    # Tabel rata-rata harga per bulan
+    st.write("Tabel rata-rata harga emas bulanan")
     
-    st.write(f"Berdasarkan data historis, harga emas cenderung paling rendah pada bulan: {month_name_id}")
+    # Mengubah format penulisan harga
+    locale.setlocale(locale.LC_ALL, 'id_ID.UTF-8')
+    def format_currency(value):
+        return locale.format_string("%.2f", value, grouping=True)
     
-    st.bar_chart(average_monthly_prices)
+    # Agar kolom bulan menggunakan nama bulan
+    monthly_avg_prices_pivot.columns = [bulan[i] for i in monthly_avg_prices_pivot.columns]
+    # Format 2 angka setelah desimal
+    monthly_avg_prices_pivot = monthly_avg_prices_pivot.map(format_currency)
+    # Format penulisan tahun, tanpa koma
+    monthly_avg_prices_pivot.index = monthly_avg_prices_pivot.index.astype(str)
+    # Tampilkan data harga sejak 3 tahun lalu
+    # monthly_avg_prices_pivot = monthly_avg_prices_pivot(monthly_avg_prices_pivot['Year'].isin([current_year, current_year-1, current_year-2, current_year-3]))
     
+    
+    # format_tahun = str(monthly_avg_prices_pivot.index).replace(',', '')
+    # monthly_avg_prices_pivot.index = format_tahun
+    # monthly_avg_prices_pivot = monthly_avg_prices_pivot.map(lambda x: f"{x:.2f}")
+    # monthly_avg_prices_pivot = locale.currency(monthly_avg_prices_pivot.map(lambda x: f"{x:.2f}"))
+    # monthly_avg_prices_pivot = locale.currency(monthly_avg_prices_pivot)
+    
+    # df['Year'] = df['Year'].str.replace(',', '')
+    st.dataframe(monthly_avg_prices_pivot)
+    
+    bulan_terendah = []
+    frekuensi_bulan = {}
+
+    # Display overall recommendation
     st.write("Rekomendasi beli:")
-    st.success(f"Bulan terbaik untuk membeli emas adalah bulan {month_name_id} berdasarkan tren harga historis.")
+    for index, row in recommended_months_per_year.iterrows():
+        year = row['Year']
+        month = row['Month']
+        month_name_id = bulan[month]
+        
+        bulan_terendah.append(month_name_id)
+        # st.write(f"Bulan terendah : {', '.join(bulan_terendah)}.")
+        st.success(f"Bulan terbaik untuk membeli emas pada tahun :blue[{year:.0f}] adalah bulan :red[{month_name_id}] berdasarkan tren harga historis.")
+
+    for month in bulan_terendah:
+        if month in frekuensi_bulan:
+            frekuensi_bulan[month] += 1
+        else:
+            frekuensi_bulan[month] = 1
     
+    # st.write(f"Frekuensi bulan: {frekuensi_bulan}")
+    # st.write(f"Bulan terbanyak: {max(frekuensi_bulan, key=frekuensi_bulan.get)}")
+    
+    # Mengecek frekuensi bulan terpilih
+    unique_frequences = set(frekuensi_bulan.values())
+    
+    if len(unique_frequences) == 1:
+        # Jika frekuensi semua bulan yg terpilih sama
+        st.caption(f"Pada 3 tahun terakhir, harga emas cenderung turun pada bulan :red[{', '.join(frekuensi_bulan.keys())}].")
+    else:
+        # Jika terdapat 1 bulan dengan frekuensi tertinggi
+        bulan_terendah_terbesar = [bulan for bulan, freq in frekuensi_bulan.items() if freq == max(frekuensi_bulan.values())]
+        st.caption(f"Berdasarkan data pada 3 tahun terakhir, harga emas cenderung turun pada bulan {', '.join(bulan_terendah_terbesar)}")

@@ -15,6 +15,7 @@ from datetime import datetime, timedelta
 import emoji
 # import streamlit_authenticator as stauth 
 import schedule           
+from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error
 
 
 st.set_page_config(page_title="nGold", page_icon=":bar_chart")
@@ -150,6 +151,24 @@ if choice == "Buyback":
     weights1 = [3, 2, 1]
     weights1 = np.array(weights1)
     wmavg1 = df3['Pricebuy'].rolling(window=3, win_type=None).apply(lambda x: (x * weights1).sum() / weights1.sum(), raw=True)
+    
+    # def calculate_accuracy_metrics(actual, predicted):
+    #     mse = mean_squared_error(actual, predicted)
+    #     mape = mean_absolute_percentage_error(actual, predicted)
+    #     st.write(f"Mean Squared Error (MSE): {mse}")
+    #     st.write(f"Mean Absolute Percentage Error (MAPE): {mape * 100:.2f}%")
+    
+    # # Check if 'Price10' column exists in df2
+    # if 'Price10' in df2.columns and 'Price10' in wmavg2.columns:
+    #     # Align the series by their indexes to ensure comparisons are made correctly
+    #     common_index = wmavg2.index.intersection(df2.index)
+    #     actual_values = df2.loc[common_index, 'Price10']
+    #     predicted_values = wmavg2.loc[common_index]
+    
+    #     # Calculate accuracy metrics
+    #     calculate_accuracy_metrics(actual_values, predicted_values)
+    # else:
+    #     print("Error: 'Price10' column not found in df2 or wmavg2. Please check the data.")
 
     def load_data():
         file = pd.read_csv('data/emas_buypack.csv')
@@ -203,6 +222,29 @@ if choice == "Buyback":
         height=400
     )
     st.plotly_chart(fig)
+    
+    def calculate_accuracy_metrics(df_predictions):
+        actual_values = df_predictions['actual']
+        predicted_values = df_predictions['predicted']
+
+        mse = mean_squared_error(actual_values, predicted_values)
+        mape = mean_absolute_percentage_error(actual_values, predicted_values)
+
+        return mse, mape
+
+    # Example DataFrame creation (replace with your actual data)
+    df_predictions = pd.DataFrame({
+        'actual': [100, 150, 200, 250, 300],
+        'predicted': [110, 145, 195, 260, 290]
+    })
+
+    # Calculate MSE and MAPE
+    mse, mape = calculate_accuracy_metrics(df_predictions)
+
+    # Display the results
+    st.write(f"Mean Squared Error (MSE): {mse:.2f}")
+    st.write(f"Mean Absolute Percentage Error (MAPE): {mape:.2%}")
+    
     with st.container():
         col1, col2 = st.columns(2)
         with col1:
