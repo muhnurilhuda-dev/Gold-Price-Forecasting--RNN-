@@ -303,6 +303,23 @@ elif choice == "Forecast":
     fig.add_trace(go.Scatter(x=future_dates, y=predicted_prices[:, 0], mode='lines+markers', name='Future Predict'))    
     st.plotly_chart(fig)
     
+    # Menampilkan data dalam bentuk tabel
+    recent_data = df[-7:]
+    recent_data_scaled = scaler.transform(recent_data)
+    
+    # Membuat dataframe untuk data harga 7 hari terakhir dan prediksi untuk besok   
+    recent_df = pd.DataFrame({
+        'Tanggal': recent_data.index,
+        'Harga': recent_data['Harga'].values,
+        # 'Prediksi': np.append(recent_prices[1:], predicted_prices[-1])
+    })
+    
+    st.write("Data harga emas untuk 7 hari terakhir dan prediksi besok:")
+    st.table(recent_df)
+    predicted_tomorrow_price = float(predicted_prices[0][0])
+    predicted_tomorrow_currency = locale.currency(predicted_tomorrow_price, grouping=True)
+    st.write(f"Prediksi harga besok: {predicted_tomorrow_currency}")
+    
     # SELLING GOLD RECOMMENDATION (Rekomendasi Jual Emas)
     st.header("Rekomendasi Jual Emas")
     purchase_date = st.date_input("Pilih tanggal saat Anda membeli emas", min_value=date(2014,1,1), max_value=datetime.now(), format="DD/MM/YYYY")
