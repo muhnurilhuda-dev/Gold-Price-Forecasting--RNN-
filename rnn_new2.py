@@ -93,19 +93,6 @@ elif choice == "Scrape Data":
                 month_name_id = bulan[date.month]
                 url_day = f"https://harga-emas.org/history-harga/{date.year}/{month_name_id}/{date.day}/"                
                 
-                # max_entries = 3
-                # for attempt in range(max_entries):
-                #     try:
-                #         page = requests.get(url_day, timeout=10)
-                #         page.raise_for_status() # Raise an exception for HTTP requests
-                #         break
-                #     except requests.exceptions.RequestException as e:
-                #         st.write(f"Attempt {attempt + 1} failed: {e}")
-                #         time.sleep(2)
-                # else:
-                #     st.error("Failed to retrieve data after multiple attempts.")
-                #     return []
-                
                 try:
                     page = requests.get(url_day)
                     soup = BeautifulSoup(page.content, 'html.parser')
@@ -229,22 +216,22 @@ elif choice == "Forecast":
     # testY = scaler.inverse_transform([testY])
     testY = scaler.inverse_transform(testY.reshape(-1, 1))
     
-    # # Menghitung tingkat error
-    # from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+    # Menghitung tingkat error
+    from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
     
-    # train_mse = mean_squared_error(trainY, train_predict)
-    # train_mape = mean_absolute_percentage_error(trainY, train_predict)
-    # test_mse = mean_squared_error(testY, test_predict)
-    # test_mape = mean_absolute_percentage_error(testY, test_predict)
+    train_mse = mean_squared_error(trainY, train_predict)
+    train_mape = mean_absolute_percentage_error(trainY, train_predict)
+    test_mse = mean_squared_error(testY, test_predict)
+    test_mape = mean_absolute_percentage_error(testY, test_predict)
     
-    # # def mean_absolute_percentage_error(testY, test_predict):
-    # #     return np.mean(np.abs((testY, test_predict) / test_predict)) * 100
+    # def mean_absolute_percentage_error(testY, test_predict):
+    #     return np.mean(np.abs((testY, test_predict) / test_predict)) * 100
     
     
-    # st.write(f"Train MSE: {train_mse:.4f}")
-    # st.write(f"Train MAPE: {train_mape * 100}%")
-    # st.write(f"Test MSE: {test_mse:.4f}")
-    # st.write(f"Test MAPE: {test_mape * 100}%")
+    st.write(f"Train MSE: {train_mse:.4f}")
+    st.write(f"Train MAPE: {train_mape * 100}%")
+    st.write(f"Test MSE: {test_mse:.4f}")
+    st.write(f"Test MAPE: {test_mape * 100}%")
 
     # Plotting
     train_predict_plot = np.empty_like(data)
@@ -306,17 +293,22 @@ elif choice == "Forecast":
     # Menampilkan data dalam bentuk tabel
     recent_data = df[-7:]
     recent_data_scaled = scaler.transform(recent_data)
+    # recent_data_harga = recent_data['Harga'].values
+    locale.setlocale(locale.LC_ALL, 'id_ID.UTF-8')
+    # recent_data_harga_formatted = locale.currency(recent_data_harga)
     
     # Membuat dataframe untuk data harga 7 hari terakhir dan prediksi untuk besok   
     recent_df = pd.DataFrame({
         'Tanggal': recent_data.index,
-        'Harga': recent_data['Harga'].values,
+        'Harga': recent_data['Harga'].apply(lambda x: locale.currency(x, grouping=True)),
         # 'Prediksi': np.append(recent_prices[1:], predicted_prices[-1])
     })
     
     st.write("Data harga emas untuk 7 hari terakhir dan prediksi besok:")
-    st.table(recent_df)
+    st.markdown(recent_df.style.hide(axis="index").to_html(), unsafe_allow_html=True)
+    
     predicted_tomorrow_price = float(predicted_prices[0][0])
+    locale.setlocale(locale.LC_ALL, 'id_ID.UTF-8')
     predicted_tomorrow_currency = locale.currency(predicted_tomorrow_price, grouping=True)
     st.write(f"Prediksi harga besok: {predicted_tomorrow_currency}")
     
@@ -326,7 +318,7 @@ elif choice == "Forecast":
     # purchase_price = st.number_input("Masukkan satuan gram emas yang ingin anda jual")
     purchase_date_str = purchase_date.strftime("%Y-%m-%d")
     
-    locale.setlocale(locale.LC_ALL, '')
+    locale.setlocale(locale.LC_ALL, 'id_ID.UTF-8')
     
     if purchase_date_str in df.index:
         purchase_price = float(df.loc[purchase_date_str]['Harga'])
@@ -353,10 +345,10 @@ elif choice == "Forecast":
                 if tomorrow_price > purchase_price:
                     profit_currency = locale.currency((tomorrow_price - purchase_price), grouping=True)
                     time.sleep(1)
-                    st.success(f":blue[Direkomendasikan] untuk menjual emas. Prediksi harga besok: :blue[{tomorrow_currency_price}/gram].\nAnda akan untung sebesar :blue[{profit_currency}]")
+                    st.success(f":blue[Direkomendasikan] untuk menjual emas besok. Prediksi harga besok: :blue[{tomorrow_currency_price}/gram].\nAnda akan untung sebesar :blue[{profit_currency}]")
                 else:
                     time.sleep(1)
-                    st.warning(f":red[Tidak direkomendasikan] untuk menjual emas. Prediksi harga besok: :red[{tomorrow_currency_price}/gram]")
+                    st.warning(f":red[Tidak direkomendasikan] untuk menjual emas besok. Prediksi harga besok: :red[{tomorrow_currency_price}/gram]")
             # else:
             #     st.error("Data harga pada tanggal tersebut kosong. Tolong pilih tanggal lain yang tidak kosong.")
 
@@ -427,17 +419,7 @@ elif choice == "Forecast":
     monthly_avg_prices_pivot = monthly_avg_prices_pivot.map(format_currency)
     # Format penulisan tahun, tanpa koma
     monthly_avg_prices_pivot.index = monthly_avg_prices_pivot.index.astype(str)
-    # Tampilkan data harga sejak 3 tahun lalu
-    # monthly_avg_prices_pivot = monthly_avg_prices_pivot(monthly_avg_prices_pivot['Year'].isin([current_year, current_year-1, current_year-2, current_year-3]))
-    
-    
-    # format_tahun = str(monthly_avg_prices_pivot.index).replace(',', '')
-    # monthly_avg_prices_pivot.index = format_tahun
-    # monthly_avg_prices_pivot = monthly_avg_prices_pivot.map(lambda x: f"{x:.2f}")
-    # monthly_avg_prices_pivot = locale.currency(monthly_avg_prices_pivot.map(lambda x: f"{x:.2f}"))
-    # monthly_avg_prices_pivot = locale.currency(monthly_avg_prices_pivot)
-    
-    # df['Year'] = df['Year'].str.replace(',', '')
+
     st.dataframe(monthly_avg_prices_pivot)
     
     bulan_terendah = []
